@@ -43,7 +43,7 @@ test('UI defers only a confirmed unresolved platform item and reveals an exporte
   } finally {await browser?.close();await app.close();}
 });
 
-test('dual-platform UI protects four people, unifies login and executes only renewed approved mock batches', async () => {
+test('dual-platform UI waits for batch finalization before renewed authorization', {timeout:90000}, async () => {
   const baseDir = await mkdtemp(path.join(os.tmpdir(),'offboarding-dual-ui-'));
   const protectedTeachers = Array.from({length:4},(_,i)=>({fullName:'Synthetic Protected '+i,email:`protected${i}@example.com`,reason:'Test configuration only'}));
   const config = {runtime:{baseDir,reportsDir:path.join(baseDir,'reports')},safety:{maxExecuteActions:10,protectedTeachers},sites:{arclc:{enabled:true,implementationStatus:'ready',organizationLabel:'ALLCPR Inc.'},aha:{enabled:true,implementationStatus:'ready',coverageVerified:true,organizationId:'32238',maxBatchActions:3}}};
@@ -54,11 +54,20 @@ test('dual-platform UI protects four people, unifies login and executes only ren
     adapterFactory:platform=>({unalign:async item=>{actions.push([platform,item.email]);return {status:'REMOVED',detail:'Simulated result; no live website action'};}})
   });
   const app = await startLocalServer({config,coordinator});
+  const historyReached = Promise.withResolvers(), historyGate = Promise.withResolvers();
+  let holdHistory = false, historyHeld = false;
   let browser;
   try {
     browser = await chromium.launch({headless:true});
     const page = await browser.newPage();
-    await page.route('**/*', route=>new URL(route.request().url()).origin===app.origin ? route.continue() : route.abort());
+    await page.route('**/*', async route => {
+      const url = new URL(route.request().url());
+      if (url.origin !== app.origin) return route.abort();
+      if (url.pathname === '/api/jobs' && holdHistory && !historyHeld) {
+        historyHeld = true; historyReached.resolve(); await historyGate.promise;
+      }
+      return route.continue();
+    });
     await page.goto(app.url);
     const csv = ['Full Name,Email',...config.safety.protectedTeachers.map(t=>t.fullName+','+t.email),'Example One,one@example.com','Example Two,two@example.com'].join('\n');
     await page.locator('#file').setInputFiles({name:'isolated.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
@@ -78,17 +87,23 @@ test('dual-platform UI protects four people, unifies login and executes only ren
     await page.waitForFunction(()=>document.querySelector('#login-state').textContent.includes('AHA: Last check passed'));
     assert.equal(actions.length,0);
     await page.locator('#approved').check();
+    holdHistory = true;
     await page.locator('#execute').click();
     await page.waitForFunction(()=>document.querySelector('#job-counts').textContent.includes('3 / 4'));
+    await historyReached.promise;
     assert.equal(actions.length,3);
+    assert.equal(await page.locator('#approved').isDisabled(),true,'completed counts must not unlock authorization while history is still refreshing');
     assert.equal(await page.locator('#approved').isChecked(),false);
     assert.equal(await page.locator('#execute').isDisabled(),true);
+    historyGate.resolve();
+    await page.waitForFunction(()=>!document.querySelector('#approved').disabled);
+    assert.equal(await page.locator('#approved').isChecked(),false,'completion never authorizes the next batch');
     await page.locator('#approved').check();
     await page.locator('#execute').click();
     await page.waitForFunction(()=>document.querySelector('#job-counts').textContent.includes('4 / 4'));
     assert.deepEqual(actions,[['arclc','one@example.com'],['arclc','two@example.com'],['aha','one@example.com'],['aha','two@example.com']]);
     assert.deepEqual(logins,['arclc','aha','arclc','arclc','aha','aha']);
-  } finally {await browser?.close();await app.close();}
+  } finally {historyGate.resolve();await browser?.close();await app.close();}
 });
 
 test('local UI import, preview, explicit approval, mock execution, export and recovery', async () => {

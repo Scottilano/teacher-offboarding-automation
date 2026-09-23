@@ -6,6 +6,7 @@ if (location.hash) { sessionStorage.setItem(sessionKey, token); history.replaceS
 let preview = null, job = null, state = null, polling = false, wasBusy = false;
 const excludedEmails = new Set();
 let creating = false, importing = false, importGeneration = 0, pendingDeferral = null, lastExportJob = null;
+let starting = false;
 const canDefer = status => ['MANUAL_REVIEW','ERROR','UNVERIFIED','INTERRUPTED','LOGIN_REQUIRED'].includes(status);
 const done = status => ['REMOVED', 'ABSENT_VERIFIED'].includes(status);
 const labels = { PENDING: 'Pending', READY: 'Ready', RUNNING: 'Running', CHECKING: 'Inspecting', REMOVED: 'Removed', ABSENT_VERIFIED: 'Verified absent', ERROR: 'Error', UNVERIFIED: 'Unverified', MANUAL_REVIEW: 'Manual review', DEFERRED: 'Deferred for manual review', INTERRUPTED: 'Interrupted' };
@@ -23,14 +24,16 @@ function message(text, error = false) {
 function cell(row, text, className) { const td = document.createElement('td'); td.textContent = text; if (className) td.className = className; row.append(td); }
 function lockedJob() { return job?.items.some(i => !done(i.status) && i.status !== 'DEFERRED' && !state?.sites[i.platform]?.ready); }
 function updateControls() {
-  const busy = !!state?.busy || creating || importing;
+  // Keep authorization locked until both execution and the final UI refresh finish.
+  const busy = !!state?.busy || wasBusy || starting || creating || importing;
+  $('approved').disabled = busy;
   for (const id of ['import', 'read-sheet', 'create', 'load', 'login-arc', 'login-aha', 'inspect']) $(id).disabled = busy;
   $('create').disabled = busy || state?.previewExclusionVersion !== 1 || state?.protectedExclusionVersion !== 1 || !preview || preview.rejected.length > 0 || !preview.accepted.some(i => !excludedEmails.has(i.email));
   for (const button of document.querySelectorAll('#preview-rows button')) button.disabled = busy || button.dataset.protected === 'true';
   $('file').disabled = busy;
   $('file-limit').textContent = `Excel .xlsx / CSV · Maximum ${state?.maxFileMb ?? 8} MB`;
   const gate = executionState(job, state, $('approved').checked);
-  $('execute').disabled = creating || importing || gate.disabled;
+  $('execute').disabled = busy || gate.disabled;
   $('execution-reason').textContent = gate.reason;
   $('stop').disabled = !state?.active || state.active.stopRequested;
   $('export').disabled = !job;
@@ -191,9 +194,14 @@ on('create', async () => {
 for (const [id, platform] of [['login-arc','arclc'], ['login-aha','aha']]) on(id, async () => { message('Opening the automated browser. Complete sign-in there.'); await api('login', { platform }); await refresh(); });
 on('load', async () => { if (!$('history').value) throw new Error('Select a job.'); job = await api('job?id=' + encodeURIComponent($('history').value)); $('approved').checked = false; renderJob(); message('Local progress loaded. Inspect uncertain items before retrying.'); });
 for (const [id, mode] of [['inspect','inspect'], ['execute','execute']]) on(id, async () => {
+  if (starting || wasBusy || state?.busy) throw new Error('Wait for the current operation and result refresh to finish.');
   if (!job) throw new Error('Save or open a local job first.');
-  await api('start', { id: job.id, mode, limit: Number($('limit').value), confirmation: mode === 'execute' && $('approved').checked ? 'UNALIGN:' + job.id : undefined });
-  $('approved').checked = false; wasBusy = true; message(mode === 'execute' ? 'Live removal has started. Do not interact with or close the automated browser.' : 'Inspection started. No removal will be submitted.'); await refresh();
+  const confirmation = mode === 'execute' && $('approved').checked ? 'UNALIGN:' + job.id : undefined;
+  starting = true; $('approved').checked = false; updateControls();
+  try {
+    await api('start', { id: job.id, mode, limit: Number($('limit').value), confirmation });
+    wasBusy = true; message(mode === 'execute' ? 'Live removal has started. Do not interact with or close the automated browser.' : 'Inspection started. No removal will be submitted.'); await refresh();
+  } finally { starting = false; updateControls(); }
 });
 on('stop', async () => { await api('stop', {}); await refresh(); });
 on('export', async () => { const id=job.id;const result = await api('export', { id });lastExportJob=id; message('Results CSV saved locally: \n' + result.filePath+'\nClick Show in Finder to locate the file.'); });

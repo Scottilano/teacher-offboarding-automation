@@ -17,7 +17,7 @@ function fixture() {
   };
   const context=vm.createContext({$,document:{querySelectorAll:()=>[]},preview:null,job:null,
     state:{busy:false,previewExclusionVersion:1,protectedExclusionVersion:1,sites:{aha:{ready:true}},maxBatch:10},
-    creating:false,importing:false,importGeneration:0,pendingDeferral:null,lastExportJob:null,excludedEmails:new Set(),
+    creating:false,importing:false,starting:false,wasBusy:false,importGeneration:0,pendingDeferral:null,lastExportJob:null,excludedEmails:new Set(),
     executionState:()=>({disabled:false,reason:''}),done:()=>false,renderPreview:()=>{},message:()=>{},
     api:(route,body)=>new Promise((resolve,reject)=>requests.push({route,body,resolve,reject})),
     FileReader:class {readAsDataURL(){readers.push(this);}}});
