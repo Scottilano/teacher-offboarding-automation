@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Teacher Offboarding · Local Edition</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<header><div class="brand">ALLCPR <span>Teacher Management</span></div><span class="local">Local Edition · No Google Sheets write-back</span></header>
+<main>
+<div class="intro"><p class="eyebrow">TEACHER OFFBOARDING</p><h1>Teacher Offboarding</h1><p>Import a roster, review the scope, then remove instructor affiliations. Source files stay unchanged; results stay on this computer.</p></div>
+<div id="message" role="status" aria-live="polite" hidden></div>
+<section class="card"><div class="section-title"><h2>1. Import and Review</h2><span id="file-limit">Excel .xlsx / CSV · Loading file limit...</span></div>
+<div class="import-bar"><label class="file-label">Roster file<input id="file" type="file" accept=".xlsx,.csv"></label><button id="import">Read Roster</button></div>
+<div id="sheet-picker" hidden><label>Worksheet containing names and emails <select id="sheet"></select></label><button id="read-sheet" class="secondary">Read Worksheet</button></div>
+<p class="hint">The first row must include Full Name and Email (recognized Chinese headers are also supported). Status columns are ignored; repeated records are merged by email. Replace identity formulas with plain text values.</p>
+<p id="protection-note" class="hint" hidden></p>
+<div id="preview" hidden><p id="source"></p><div id="counts" class="counts"></div>
+<p class="hint">This preview merges records by email; it is not a full copy of the original sheet. Exclude from Job skips that email on all selected platforms without changing the file or website. You can include it again before saving. Exclusions do not carry over to new imports.</p>
+<div class="preview-tools"><label for="preview-search">Find a teacher</label><input id="preview-search" type="search" placeholder="Enter a name or email"><label><input id="excluded-only" type="checkbox">Show excluded only</label></div>
+<p id="preview-summary" role="status" aria-live="polite"></p>
+<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Source rows</th><th>Validation</th><th>In this job</th></tr></thead><tbody id="preview-rows"></tbody></table></div>
+<div class="platforms"><label><input type="checkbox" id="arc" checked> ARCLC · ALLCPR Inc. / Instructor</label><label><input type="checkbox" id="aha"> AHA · ALLCPR / Instructor (32238)</label></div>
+<p id="platform-note" class="hint"></p><button id="create">Save Local Job</button><p class="hint">Saving a job does not open a website or submit removals. Correct invalid records and import again before saving.</p></div></section>
+<section class="card"><div class="section-title"><h2>2. Sign In and Execute</h2><span>Exact email match · Stop on uncertainty</span></div>
+<p class="hint">Both platforms follow the same process: click Check Login below, sign in on the official page opened by the app (including MFA), then click Check Login again to verify. Do not enter passwords in the terminal. Each platform has a separate browser window; sessions are not shared with your regular browser. Login is rechecked before each teacher. Expired sessions pause the job without automatically retrying a removal.</p>
+<div class="login-bar"><button id="login-arc" class="secondary">Check Login / Open ARCLC</button><button id="login-aha" class="secondary">Check Login / Open AHA</button><span id="login-state" class="hint">Sessions are checked on entry and before each teacher. Enter passwords only on the official page in the automated browser.</span></div>
+<div class="history-bar"><label>Resume a local job <select id="history"><option value="">Select a job</option></select></label><button id="load" class="secondary">Open Job</button></div>
+<div id="job" hidden><h3 id="job-title"></h3><p id="job-scope" class="hint"></p><p id="job-counts"></p>
+<div class="controls"><label>Platform actions per batch <input id="limit" type="number" min="1" max="10" value="10"></label><button id="inspect" class="secondary">Inspect Unfinished Items (No Removal)</button><button id="export" class="secondary">Export Results CSV</button><button id="reveal-result" class="secondary" disabled>Show in Finder</button></div>
+<p id="batch-note" class="hint"></p>
+<label class="approval"><input id="approved" type="checkbox"> I have reviewed the pending roster below, confirmed that these teachers should be unaligned, and authorize processing within the listed platform and organization scope. Excluded teachers are not authorized.</label>
+<p id="execution-reason" role="status" aria-live="polite"></p>
+<p id="action-message" role="alert" hidden></p>
+<div class="controls"><button id="execute" class="danger">Execute Next Batch</button><button id="stop" class="secondary" disabled>Stop After Current Teacher</button></div>
+<p id="progress" role="status" aria-live="polite"></p>
+<section id="defer-panel" class="card" hidden><h3>Confirm Deferral</h3><p id="defer-target"></p><p class="hint">Skip only this platform action in this job. Deferral does not remove an affiliation, count as success, or affect another platform or future roster. It cannot undo an earlier submission; uncertain outcomes still require manual review.</p><label>Reason for deferral <input id="defer-reason" type="text" maxlength="500" placeholder="For example: administrator role only; review manually"></label><label class="approval"><input id="defer-approved" type="checkbox">I confirm this deferral. Preserve the previous result and audit record; do not count this item as complete.</label><div class="controls"><button id="defer-confirm" disabled>Confirm Deferral</button><button id="defer-cancel" class="secondary">Cancel</button></div></section>
+<div class="table-wrap"><table><thead><tr><th>Name / Email</th><th>Platform / Organization</th><th>Result</th><th>Details</th><th>Manual review</th></tr></thead><tbody id="job-rows"></tbody></table></div>
+<div id="job-exclusions" hidden><h3>Excluded from This Job</h3><p class="hint">These teachers are not queued and do not count as complete. To process one after saving, create a new job. Exclusions do not reverse earlier removals.</p><div class="table-wrap"><table><thead><tr><th>Name / Email</th><th>Source rows</th><th>Details</th></tr></thead><tbody id="job-excluded-rows"></tbody></table></div></div></div>
+</section>
+<footer><p id="storage"></p></footer>
+</main><script src="/app.js" type="module"></script></body></html>

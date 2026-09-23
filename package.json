@@ -1,0 +1,31 @@
+{
+  "name": "teacher-offboarding-automation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Dry-run-first Playwright automation for AHA Atlas and Red Cross Learning Center instructor offboarding.",
+  "scripts": {
+    "start": "node scripts/launch.mjs start",
+    "init": "node scripts/launch.mjs init",
+    "doctor": "node scripts/launch.mjs doctor",
+    "browsers:install": "node scripts/launch.mjs browsers",
+    "export:source": "node scripts/launch.mjs export",
+    "validate": "node src/cli.mjs validate",
+    "dry-run": "node src/cli.mjs dry-run",
+    "login:aha": "node src/cli.mjs login --site aha",
+    "login:arclc": "node src/cli.mjs login --site arclc",
+    "inspect": "node src/cli.mjs inspect",
+    "live-test": "node src/cli.mjs live-test",
+    "execute": "node src/cli.mjs execute",
+    "test": "node scripts/launch.mjs test",
+    "test:browser": "node scripts/launch.mjs test --browser",
+    "test:ui": "node scripts/launch.mjs test --browser"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "googleapis": "^160.0.0",
+    "playwright": "^1.55.0"
+  }
+}

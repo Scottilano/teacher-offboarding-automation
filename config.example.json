@@ -1,0 +1,57 @@
+{
+  "source": {
+    "spreadsheetId": "PASTE_GOOGLE_SPREADSHEET_ID",
+    "sheetName": "Sheet1",
+    "range": "A1:Z5000",
+    "credentialsFile": "./secrets/google-service-account.json",
+    "headers": {
+      "fullName": "Full Name",
+      "email": "Email",
+      "achievement": "Achievement: Achievement Name",
+      "upgradeType": "UpgradeType",
+      "approved": null,
+      "processAha": "Process AHA",
+      "processArclc": "Process ARCLC"
+    },
+    "columns": {
+      "status": "G"
+    }
+  },
+  "eligibility": {
+    "allowedStatuses": [],
+    "requireApprovedColumn": false
+  },
+  "audit": {
+    "sheetName": "Automation Audit"
+  },
+  "import": {
+    "maxFileMb": 50
+  },
+  "safety": {
+    "maxExecuteActions": 100,
+    "exactEmailMatch": true,
+    "actionDelayMs": 1200
+  },
+  "browser": {
+    "headless": false,
+    "slowMoMs": 250,
+    "profileRoot": "./data/browser-profiles"
+  },
+  "sites": {
+    "aha": {
+      "enabled": true,
+      "loginUrl": "https://atlas.heart.org/",
+      "organizationId": "32238",
+      "coverageVerified": false,
+      "allowedConfirmMessages": [],
+      "implementationStatus": "discovery_complete"
+    },
+    "arclc": {
+      "enabled": true,
+      "loginUrl": "https://www.redcrosslearningcenter.org/login",
+      "organizationLabel": "ALLCPR Inc.",
+      "allowedConfirmMessages": [],
+      "implementationStatus": "discovery_complete"
+    }
+  }
+}
